@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>クイズ</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background: #ffffff;
+      color: #111111;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+
+      display: flex;
+      justify-content: center;
+    }
+
+
+    /* ==============================
+       メイン画面
+       ============================== */
+
+    .page {
+      width: min(100%, 900px);
+      padding: 16px 16px 32px;
+    }
+
+
+    /* クイズ画像 */
+
+    .quiz-image {
+      display: block;
+
+      width: 100%;
+      height: auto;
+
+      margin: 0 auto;
+
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+
+    /* ==============================
+       回答入力部分
+       ============================== */
+
+    .answer-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 10px;
+
+      margin-top: 20px;
+
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+
+    /* 入力フィールド */
+
+    .answer-input {
+      flex: 1;
+
+      min-width: 0;
+      max-width: 320px;
+
+      height: 46px;
+
+      padding: 8px 12px;
+
+      border: 2px solid #555;
+      border-radius: 8px;
+
+      font-size: 18px;
+
+      background: #ffffff;
+      color: #111111;
+
+      outline: none;
+    }
+
+    .answer-input:focus {
+      border-color: #111111;
+    }
+
+
+    /* 決定ボタン */
+
+    .answer-button {
+      height: 46px;
+
+      padding: 0 18px;
+
+      border: none;
+      border-radius: 8px;
+
+      font-size: 17px;
+      font-weight: 700;
+
+      background: #222222;
+      color: #ffffff;
+
+      cursor: pointer;
+
+      touch-action: manipulation;
+    }
+
+    .answer-button:active {
+      transform: scale(0.96);
+    }
+
+
+    /* メッセージ */
+
+    .message {
+      min-height: 1.5em;
+
+      margin-top: 10px;
+
+      text-align: center;
+
+      font-size: 14px;
+      color: #666666;
+    }
+
+
+    /* ==============================
+       正解画像表示
+       ============================== */
+
+    .correct-overlay {
+      position: fixed;
+
+      inset: 0;
+
+      z-index: 9999;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 18px;
+
+      background: rgba(0, 0, 0, 0.88);
+
+      opacity: 0;
+      visibility: hidden;
+
+      pointer-events: none;
+
+      transition:
+        opacity 220ms ease,
+        visibility 220ms ease;
+    }
+
+
+    /* 正解時 */
+
+    .correct-overlay.show {
+      opacity: 1;
+      visibility: visible;
+
+      pointer-events: auto;
+    }
+
+
+    /* 正解画像と識別情報のラッパー */
+
+    .correct-image-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: 96vw;
+      max-height: 92vh;
+    }
+
+
+    /* 正解画像 */
+
+    .correct-image {
+      display: block;
+
+      max-width: 96vw;
+      max-height: 92vh;
+
+      object-fit: contain;
+
+      user-select: none;
+      -webkit-user-drag: none;
+
+      transform: scale(0.25);
+      opacity: 0;
+
+      transition:
+        transform 420ms cubic-bezier(.18, .9, .28, 1.2),
+        opacity 260ms ease;
+    }
+
+
+    /* ズーム表示 */
+
+    .correct-overlay.show .correct-image {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+
+    /* ==============================
+       スマートフォン
+       ============================== */
+
+    @media (max-width: 480px) {
+
+      .page {
+        padding: 10px 10px 24px;
+      }
+
+      .answer-area {
+        margin-top: 16px;
+
+        gap: 8px;
+
+        font-size: 18px;
+      }
+
+      .answer-input {
+        height: 44px;
+
+        font-size: 17px;
+      }
+
+      .answer-button {
+        height: 44px;
+
+        padding: 0 14px;
+
+        font-size: 16px;
+      }
+
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <!-- ==============================
+       クイズ画面
+       ============================== -->
+
+  <main
+    class="page"
+    id="mainPage"
+  >
+
+    <img
+      src="image_quiz.jpg"
+      alt="クイズ画像"
+      class="quiz-image"
+      id="quizImage"
+    >
+
+
+    <!-- 回答欄 -->
+
+    <div class="answer-area">
+
+      <label for="answerInput">
+        答
+      </label>
+
+
+      <input
+        type="text"
+        id="answerInput"
+        class="answer-input"
+
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+
+        enterkeyhint="done"
+      >
+
+
+      <button
+        type="button"
+        id="answerButton"
+        class="answer-button"
+      >
+        決定
+      </button>
+
+    </div>
+
+
+    <div
+      class="message"
+      id="message"
+    ></div>
+
+  </main>
+
+
+
+  <!-- ==============================
+       正解画像
+       ============================== -->
+
+  <div
+    class="correct-overlay"
+    id="correctOverlay"
+    aria-hidden="true"
+  >
+
+    <div class="correct-image-wrap">
+
+      <canvas
+        id="correctCanvas"
+        class="correct-image"
+        aria-label="正解画像"
+      ></canvas>
+
+    </div>
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    /* ==============================
+       要素取得
+       ============================== */
+
+    const answerInput =
+      document.getElementById("answerInput");
+
+    const answerButton =
+      document.getElementById("answerButton");
+
+    const correctOverlay =
+      document.getElementById("correctOverlay");
+
+    const message =
+      document.getElementById("message");
+
+    const correctCanvas =
+      document.getElementById("correctCanvas");
+
+
+    // ローカルで直接HTMLを開いた場合でも動作する初期正解
+    // text_answer.txt が正常に読めた場合は、その内容で上書きする
+    let validAnswers = ["6", "６", "六"];
+
+    let isCorrect = false;
+
+
+
+    /* ==============================
+       文字列整理
+       ============================== */
+
+    function normalizeAnswer(text) {
+
+      /*
+        入力文字列の前後の空白だけを除去。
+
+        大文字・小文字、
+        全角・半角、
+        ひらがな・カタカナなどは
+        自動変換しない。
+
+        表記揺れは
+        text_answer.txt 側に記載する。
+      */
+
+      return text.trim();
+    }
+
+
+
+    /* ==============================
+       正解データ読み込み
+       ============================== */
+
+    async function loadAnswers() {
+
+      try {
+
+        const response =
+          await fetch(
+            "text_answer.txt",
+            {
+              cache: "no-store"
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "text_answer.txt を読み込めませんでした。"
+          );
+
+        }
+
+
+        const text =
+          await response.text();
+
+
+        /*
+          次の区切りに対応
+
+          半角コンマ ,
+          全角コンマ ，
+          改行
+        */
+
+        validAnswers = text
+
+          .split(/[,，\r\n]+/)
+
+          .map(normalizeAnswer)
+
+          .filter(
+            answer =>
+              answer.length > 0
+          );
+
+
+        if (validAnswers.length === 0) {
+
+          throw new Error(
+            "text_answer.txt に正解文字列がありません。"
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.warn(
+          "text_answer.txt を読み込めなかったため、HTML内の初期正解を使用します。",
+          error
+        );
+
+        // file:// で直接開いた場合などは fetch が失敗することがある。
+        // 初期値 ["6", "６", "六"] をそのまま使用する。
+        message.textContent = "";
+
+      }
+
+    }
+
+
+
+    /* ==============================
+       正誤判定
+       ============================== */
+
+    function checkAnswer() {
+
+      if (
+        isCorrect ||
+        validAnswers.length === 0
+      ) {
+
+        return;
+
+      }
+
+
+      const input =
+        normalizeAnswer(
+          answerInput.value
+        );
+
+
+      if (input.length === 0) {
+
+        return;
+
+      }
+
+
+      /*
+        text_answer.txt にある
+        どれか1つと完全一致すれば正解
+      */
+
+      if (
+        validAnswers.includes(input)
+      ) {
+
+        showCorrectImage();
+
+      } else {
+
+        message.textContent = "ざんねん！";
+
+      }
+
+    }
+
+
+
+    /* ==============================
+       正解日時・シリアル番号
+       ============================== */
+
+    function formatCorrectDateTime(date) {
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hour = String(date.getHours()).padStart(2, "0");
+      const minute = String(date.getMinutes()).padStart(2, "0");
+      const second = String(date.getSeconds()).padStart(2, "0");
+
+      return `${year}/${month}/${day} ${hour}:${minute}:${second}`;
+    }
+
+
+    function createRandomSerial() {
+
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const bytes = new Uint32Array(12);
+
+      if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(bytes);
+      } else {
+        for (let i = 0; i < bytes.length; i++) {
+          bytes[i] = Math.floor(Math.random() * 0xffffffff);
+        }
+      }
+
+      let serial = "";
+
+      for (let i = 0; i < bytes.length; i++) {
+
+        serial += chars[bytes[i] % chars.length];
+
+        if (i === 3 || i === 7) {
+          serial += "-";
+        }
+      }
+
+      return serial;
+    }
+
+
+    function drawCorrectImageWithSecurityInfo() {
+
+      return new Promise((resolve, reject) => {
+
+        const img = new Image();
+
+        img.onload = () => {
+
+          const canvas = correctCanvas;
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+
+          const now = new Date();
+          const dateText =
+            "正解日時: " + formatCorrectDateTime(now);
+          const serialText =
+            "SERIAL: " + createRandomSerial();
+          const noteText =
+            "不正コピー防止のため識別情報を表示しています";
+
+          /*
+            画像右上の余白内に焼き込み。
+            画像サイズに比例して文字サイズを決定する。
+          */
+          const base = Math.max(12, Math.round(canvas.width * 0.0105));
+          const small = Math.max(10, Math.round(canvas.width * 0.0085));
+
+          ctx.textAlign = "right";
+          ctx.textBaseline = "top";
+          ctx.font = `700 ${base}px sans-serif`;
+
+          const padX = Math.round(canvas.width * 0.012);
+          const padY = Math.round(canvas.height * 0.008);
+          const lineGap = Math.round(base * 1.18);
+
+          const widths = [
+            ctx.measureText(dateText).width,
+            ctx.measureText(serialText).width
+          ];
+
+          ctx.font = `500 ${small}px sans-serif`;
+          widths.push(ctx.measureText(noteText).width);
+
+          const boxWidth =
+            Math.max(...widths) + padX * 1.4;
+          const boxHeight =
+            lineGap * 2 + small * 1.35 + padY;
+
+          const x = canvas.width - padX;
+          const y = padY;
+
+          ctx.fillStyle = "rgba(0,0,0,0.45)";
+          ctx.fillRect(
+            canvas.width - boxWidth - Math.round(padX * 0.4),
+            0,
+            boxWidth + Math.round(padX * 0.4),
+            boxHeight + padY
+          );
+
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "rgba(0,0,0,0.9)";
+          ctx.shadowBlur = Math.max(1, Math.round(base * 0.08));
+
+          ctx.font = `700 ${base}px sans-serif`;
+          ctx.fillText(dateText, x, y);
+          ctx.fillText(serialText, x, y + lineGap);
+
+          ctx.font = `500 ${small}px sans-serif`;
+          ctx.fillText(
+            noteText,
+            x,
+            y + lineGap * 2
+          );
+
+          ctx.shadowBlur = 0;
+
+          resolve();
+
+        };
+
+        img.onerror = reject;
+        img.src = "image_seikai.jpg";
+
+      });
+    }
+
+
+
+    /* ==============================
+       正解画像表示
+       ============================== */
+
+    function showCorrectImage() {
+
+      isCorrect = true;
+
+      // 正解画像に日時とランダムな識別番号を焼き込む
+      drawCorrectImageWithSecurityInfo().catch(error => {
+        console.error("正解画像の描画に失敗しました。", error);
+      });
+
+
+      /*
+        入力欄からフォーカスを外す。
+        スマホではキーボードが閉じる。
+      */
+
+      answerInput.blur();
+
+
+      correctOverlay
+        .classList
+        .add("show");
+
+
+      correctOverlay
+        .setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+    }
+
+
+
+    /* ==============================
+       初期状態へ戻す
+       ============================== */
+
+    function resetQuiz() {
+
+      if (!isCorrect) {
+
+        return;
+
+      }
+
+
+      correctOverlay
+        .classList
+        .remove("show");
+
+
+      correctOverlay
+        .setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+
+      /*
+        入力内容を消す
+      */
+
+      answerInput.value = "";
+
+      message.textContent = "";
+
+      isCorrect = false;
+
+
+      /*
+        ページ最上部へ戻す
+      */
+
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto"
+      });
+
+    }
+
+
+
+    /* ==============================
+       決定ボタン
+       ============================== */
+
+    answerButton.addEventListener(
+      "click",
+      () => {
+
+        /*
+          まず入力フィールドから
+          フォーカスを外す。
+
+          iPhone / Androidでは
+          ソフトウェアキーボードを閉じる。
+        */
+
+        answerInput.blur();
+
+
+        /*
+          フォーカス解除後に判定。
+
+          モバイルOSでの
+          キーボード処理との競合を
+          避けるため少し遅らせる。
+        */
+
+        setTimeout(
+          checkAnswer,
+          50
+        );
+
+      }
+    );
+
+
+
+    /* ==============================
+       Enter / 完了キー
+       ============================== */
+
+    answerInput.addEventListener(
+      "keydown",
+      event => {
+
+        /*
+          日本語IMEの変換中は何もしない
+        */
+
+        if (event.isComposing) {
+
+          return;
+
+        }
+
+
+        /*
+          Enter / 完了キーを押しても
+          正誤判定はしない。
+
+          入力フィールドから
+          フォーカスを外すだけ。
+        */
+
+        if (event.key === "Enter") {
+
+          event.preventDefault();
+
+          answerInput.blur();
+
+        }
+
+      }
+    );
+
+
+
+    /* ==============================
+       正解画像表示後
+       ============================== */
+
+    correctOverlay.addEventListener(
+      "click",
+      resetQuiz
+    );
+
+
+
+    /* ==============================
+       起動
+       ============================== */
+
+    loadAnswers();
+
+  </script>
+
+</body>
+</html>
